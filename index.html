@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Daraz FBM Profit Calculator</title>
+<style>
+  :root{--bg:#f4f6fb;--card:#fff;--text:#111827;--muted:#6b7280;--line:#e5e7eb;--brand:#0f1b33;--accent:#f85606;--good:#15803d;--goodbg:#ecfdf3;--bad:#b91c1c;--badbg:#fef2f2;--blue:#1d4ed8;--bluebg:#eff4ff}
+  @media (prefers-color-scheme:dark){:root{--bg:#0b1020;--card:#151b2e;--text:#f3f4f6;--muted:#9ca3af;--line:#27304a;--brand:#1b2745;--good:#4ade80;--goodbg:#10291c;--bad:#f87171;--badbg:#2b1416;--blue:#7aa2ff;--bluebg:#16213f}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:12px;padding-top:max(12px,env(safe-area-inset-top));padding-bottom:max(24px,env(safe-area-inset-bottom))}
+  .wrap{max-width:480px;margin:0 auto}
+  h1{font-size:19px;margin:6px 0 12px;text-align:center}
+  .card{background:var(--card);border-radius:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:12px}
+  .pad{padding:14px}
+  .tabs{display:flex;gap:6px;background:var(--line);padding:4px;border-radius:12px;margin-bottom:12px}
+  .tabs button{flex:1;border:0;background:transparent;color:var(--muted);padding:10px 6px;border-radius:9px;font-size:13px;font-weight:600}
+  .tabs button.on{background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+  label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;font-weight:600}
+  input[type=number],input[type=text]{width:100%;font-size:18px;padding:12px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text);outline:none}
+  input:focus{border-color:var(--accent)}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .chips{display:flex;gap:6px;margin-top:8px}
+  .chips button{flex:1;border:1.5px solid var(--line);background:transparent;color:var(--text);padding:8px 0;border-radius:9px;font-size:13px;font-weight:600}
+  .toggles{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .toggles label{display:flex;align-items:center;gap:6px;margin:0;padding:8px 12px;border:1.5px solid var(--line);border-radius:999px;font-size:13px;color:var(--text);cursor:pointer}
+  .toggles input{width:16px;height:16px;margin:0;accent-color:var(--accent)}
+  .head{background:var(--brand);color:#fff;text-align:center;font-weight:700;padding:11px}
+  .line{display:flex;justify-content:space-between;padding:10px 14px;font-size:14px;border-bottom:1px solid var(--line)}
+  .line span:last-child{font-variant-numeric:tabular-nums}
+  .line.ref{color:var(--muted)}
+  .line.total{font-weight:700}
+  .line.get{background:var(--bluebg);color:var(--blue);font-weight:700;font-size:15px}
+  .sec{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.06em;padding:10px 14px 0}
+  .profit{display:flex;justify-content:space-between;padding:14px;font-weight:800;font-size:18px;background:var(--goodbg);color:var(--good)}
+  .profit.neg{background:var(--badbg);color:var(--bad)}
+  .sell{background:var(--bluebg);color:var(--blue);padding:14px;text-align:center}
+  .sell small{display:block;font-size:12px;opacity:.8}
+  .sell b{font-size:30px}
+  .meta{display:flex;justify-content:space-around;padding:10px;font-size:13px;color:var(--muted);text-align:center}
+  .meta b{display:block;color:var(--text);font-size:15px}
+  details summary{padding:14px;font-weight:600;font-size:14px;cursor:pointer}
+  .note{font-size:11px;color:var(--muted);padding:0 14px 12px}
+  .hide{display:none}
+  .slab{display:grid;grid-template-columns:1fr 1fr 36px;gap:8px;align-items:center;margin-bottom:8px}
+  .slab input{font-size:15px;padding:10px}
+  .slab .x{border:0;background:var(--badbg);color:var(--bad);border-radius:8px;height:40px;font-size:18px}
+  .btn{width:100%;border:1.5px dashed var(--line);background:transparent;color:var(--text);padding:10px;border-radius:10px;font-weight:600;font-size:13px}
+  .tag{font-size:11px;color:var(--accent);font-weight:700}
+  .warn{background:var(--badbg);color:var(--bad);font-size:12px;padding:10px 14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Daraz FBM Profit Calculator</h1>
+
+  <div class="tabs">
+    <button id="t1" class="on" onclick="setMode(1)">Price → Profit</button>
+    <button id="t2" onclick="setMode(2)">Profit → Price</button>
+  </div>
+
+  <div class="card pad">
+    <label>Vendor / Purchasing Price (Rs.)</label>
+    <input id="cost" type="number" inputmode="decimal" placeholder="e.g. 2382">
+
+    <div id="m1">
+      <label>Selling Price on Daraz (Rs.)</label>
+      <input id="sell" type="number" inputmode="decimal" placeholder="e.g. 3200">
+    </div>
+
+    <div id="m2" class="hide">
+      <label>Target Profit (Rs.)</label>
+      <input id="target" type="number" inputmode="decimal" placeholder="e.g. 300">
+      <div class="chips">
+        <button onclick="setTarget(100)">100</button>
+        <button onclick="setTarget(200)">200</button>
+        <button onclick="setTarget(300)">300</button>
+        <button onclick="setTarget(500)">500</button>
+      </div>
+    </div>
+
+    <div class="row2">
+      <div><label>Shipping Fee (buyer pays)</label><input id="ship" type="number" inputmode="decimal" value="145"></div>
+      <div><label>Extra Charges</label><input id="extra" type="number" inputmode="decimal" value="0"></div>
+    </div>
+
+    <div class="row2">
+      <div><label>Commission %</label><input id="p_comm" type="number" inputmode="decimal" value="9"></div>
+      <div>
+        <label>Total Daraz % <span class="tag" id="totTag">AUTO</span></label>
+        <input id="p_total" type="number" inputmode="decimal" placeholder="auto">
+      </div>
+    </div>
+    <div class="note" style="padding:6px 0 0" id="totHelp"></div>
+
+    <div class="row2">
+      <div><label>Penalties (Rs.)</label><input id="pen" type="number" inputmode="decimal" value="0"></div>
+      <div><label>Handling Fee <span class="tag" id="handTag">AUTO</span></label><input id="handOv" type="number" inputmode="decimal" placeholder="auto"></div>
+    </div>
+    <div class="note" style="padding:6px 0 0">Handling box khali = auto. Agar 0 likha to handling 0 hi lagegi.</div>
+
+    <div class="toggles">
+      <label><input type="checkbox" id="fsmOn"> Join FSM</label>
+      <label><input type="checkbox" id="vmOn"> Join VM</label>
+      <label><input type="checkbox" id="punjab"> Seller Punjab se hai</label>
+    </div>
+  </div>
+
+  <div id="priceBox" class="card hide">
+    <div class="sell"><small>Daraz pe ye price lagao</small><b id="needPrice">Rs. 0</b></div>
+    <div class="warn hide" id="noSol">Is setup me target profit possible nahi (charges 100% se zyada). Total % check karo.</div>
+  </div>
+
+  <div class="card" id="result">
+    <div class="head">FBM</div>
+    <div class="line"><span>Daraz Commission</span><span id="r_comm">0</span></div>
+    <div class="line"><span>Payment Fee</span><span id="r_pay">0</span></div>
+    <div class="line ref"><span>Shipping Fee*</span><span id="r_ship">0</span></div>
+    <div class="line"><span id="r_handLbl">Handling Fee</span><span id="r_hand">0</span></div>
+    <div class="line"><span>VAT Charges</span><span id="r_vat">0</span></div>
+    <div class="line"><span>Sale Tax (2%)</span><span id="r_st">0</span></div>
+    <div class="line"><span>Withholding Tax (2%)</span><span id="r_wh">0</span></div>
+    <div class="line"><span>FSM Charges</span><span id="r_fsm">0</span></div>
+    <div class="line"><span>VM Charges</span><span id="r_vm">0</span></div>
+    <div class="line total"><span>Total Daraz Deductions</span><span id="r_ded">0</span></div>
+    <div class="line get"><span>You get from Daraz</span><span id="r_get">0</span></div>
+    <div class="sec">YOUR COSTS</div>
+    <div class="line"><span>Purchasing Price</span><span id="r_cost">0</span></div>
+    <div class="line"><span>Extra Charges</span><span id="r_extra">0</span></div>
+    <div class="line"><span>Penalties</span><span id="r_pen">0</span></div>
+    <div class="profit" id="pbox"><span>Profit</span><span id="r_profit">0</span></div>
+    <div class="meta">
+      <div>Margin on cost<b id="r_roi">0%</b></div>
+      <div>Margin on sale<b id="r_margin">0%</b></div>
+      <div>Daraz % of sale<b id="r_pct">0%</b></div>
+    </div>
+    <div class="note">* Shipping buyer pay karta hai, deductions me shamil nahi. Sirf us par VAT lagta hai (FSM join ho to VAT nahi, FSM charge lagta hai).</div>
+  </div>
+
+  <div class="card">
+    <details open>
+      <summary>🏷️ Handling Fee (price ke hisab se)</summary>
+      <div class="pad" style="padding-top:0">
+        <div class="note" style="padding:0 0 10px">Selling price jis range me aaye, wahi fee lagegi. Seller Dash se confirm sirf 2 points hain: Rs. 2000 → 20 aur Rs. 3200 → 60 (FBM, Drop-off). Baaki prices ke liye slab andaza hai, Seller Dash me check karke rows edit karo.</div>
+        <div id="slabs"></div>
+        <button class="btn" onclick="addSlab()">+ Add price range</button>
+        <div class="note" style="padding:10px 0 0" id="slabNow"></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="card">
+    <details>
+      <summary>⚙️ Other Rates</summary>
+      <div class="pad" style="padding-top:0">
+        <div class="row2">
+          <div><label>Payment Fee %</label><input id="p_pay" type="number" inputmode="decimal" value="2.25"></div>
+          <div><label>VAT % (Punjab = 16)</label><input id="p_vat" type="number" inputmode="decimal" value="15"></div>
+          <div><label>Sale Tax %</label><input id="p_st" type="number" inputmode="decimal" value="2"></div>
+          <div><label>Withholding Tax %</label><input id="p_wh" type="number" inputmode="decimal" value="2"></div>
+          <div><label>FSM %</label><input id="p_fsm" type="number" inputmode="decimal" value="6"></div>
+          <div><label>FSM extra tax %</label><input id="p_fsmtax" type="number" inputmode="decimal" value="0"></div>
+          <div><label>FSM Min (Rs.)</label><input id="p_fsmmin" type="number" inputmode="decimal" value="30"></div>
+          <div><label>FSM Max (Rs.)</label><input id="p_fsmmax" type="number" inputmode="decimal" value="200"></div>
+          <div><label>VM %</label><input id="p_vm" type="number" inputmode="decimal" value="3"></div>
+          <div><label>VM Max (Rs.)</label><input id="p_vmmax" type="number" inputmode="decimal" value="5000"></div>
+        </div>
+        <div class="note" style="padding:10px 0 0">VAT = (Commission + Payment Fee + Shipping + Handling) par. Auto Total % = (Commission + Payment) × (1 + VAT) + Sale Tax + Withholding. FSM aur VM ke min/max June 2026 ki policy ke mutabiq hain (fashion categories me FSM min lagu nahi).</div>
+      </div>
+    </details>
+  </div>
+</div>
+
+<script>
+/*TEST-START*/
+// ---------- Pure maths (no DOM) ----------
+// Handling fees confirmed from Seller Dash (FBM, drop-off). Exact matches win over the slab table.
+const CONFIRMED = {2000: 20, 3200: 60};
+function handlingFor(S, slabs){
+  if (CONFIRMED[S] !== undefined) return CONFIRMED[S];
+  const f = slabs.filter(s => s.upto !== null && !isNaN(s.upto)).sort((a,b) => a.upto - b.upto);
+  for (const s of f) if (S <= s.upto) return s.fee;
+  const last = slabs.find(s => s.upto === null);
+  return last ? last.fee : 0;
+}
+function autoPct(p){ return (p.comm + p.pay) * (1 + p.vat) + p.st + p.wh; }
+function activePct(p){ return p.totalOv !== null ? p.totalOv : autoPct(p); }
+
+function breakdown(S, p){
+  const auto = autoPct(p), pct = activePct(p);
+  const f = auto > 0 ? pct / auto : 0;           // scales items if user typed own total %
+  const hand = p.handOv !== null ? p.handOv : handlingFor(S, p.slabs);
+  const comm = S * p.comm * f, pay = S * p.pay * f;
+  const st = S * p.st * f, wh = S * p.wh * f;
+  const shipForVat = p.fsmOn ? 0 : p.ship;       // FSM joined: seller pays FSM instead of VAT on shipping
+  const vat = (S * (p.comm + p.pay) * f + shipForVat + hand) * p.vat;
+  const fsm = p.fsmOn ? Math.min(p.fsmMax, Math.max(p.fsmMin, S * p.fsmPct)) * (1 + p.fsmTax) : 0;
+  const vm  = p.vmOn ? Math.min(p.vmMax, S * p.vmPct) : 0;
+  const ded = comm + pay + hand + vat + st + wh + fsm + vm;
+  return {comm, pay, hand, vat, st, wh, fsm, vm, ded, pct};
+}
+function profitAt(S, p){ return S - breakdown(S, p).ded - p.cost - p.extra - p.pen; }
+
+// Smallest whole-rupee price that gives at least the target profit
+function solvePrice(p, target){
+  if (activePct(p) >= 1) return null;
+  let S = Math.max(1, Math.floor(p.cost + p.extra + p.pen));
+  for (let i = 0; i < 6000000; i++, S++) if (profitAt(S, p) >= target - 1e-9) return S;
+  return null;
+}
+/*TEST-END*/
+
+const $ = id => document.getElementById(id);
+const n = id => { const v = parseFloat($(id).value); return isNaN(v) ? 0 : v; };
+const opt = id => { const r = $(id).value.trim(); const v = parseFloat(r); return r !== '' && !isNaN(v) ? v : null; };
+const fmt = v => 'Rs. ' + (Math.round(v * 100) / 100).toLocaleString('en-PK', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+let mode = 1;
+let slabs = [{upto: 2000, fee: 20}, {upto: null, fee: 60}];
+
+function readParams(){
+  return {
+    cost: n('cost'), extra: n('extra'), pen: n('pen'), ship: n('ship'),
+    comm: n('p_comm')/100, pay: n('p_pay')/100, vat: n('p_vat')/100, st: n('p_st')/100, wh: n('p_wh')/100,
+    totalOv: opt('p_total') === null ? null : opt('p_total')/100,
+    handOv: opt('handOv'), slabs,
+    fsmOn: $('fsmOn').checked, fsmPct: n('p_fsm')/100, fsmTax: n('p_fsmtax')/100, fsmMin: n('p_fsmmin'), fsmMax: n('p_fsmmax'),
+    vmOn: $('vmOn').checked, vmPct: n('p_vm')/100, vmMax: n('p_vmmax')
+  };
+}
+
+/* ---------- Handling slab editor ---------- */
+function renderSlabs(){
+  const box = $('slabs'); box.innerHTML = '';
+  slabs.forEach((s, i) => {
+    const row = document.createElement('div'); row.className = 'slab';
+    const isLast = s.upto === null;
+    row.innerHTML =
+      (isLast ? '<input type="text" disabled value="Above (baaki sab)">'
+              : '<input type="number" inputmode="decimal" placeholder="Price up to" value="' + (isNaN(s.upto) ? '' : s.upto) + '">') +
+      '<input type="number" inputmode="decimal" placeholder="Fee Rs." value="' + s.fee + '">' +
+      (isLast ? '<span></span>' : '<button class="x" aria-label="remove">×</button>');
+    const ins = row.querySelectorAll('input');
+    if (!isLast) {
+      ins[0].addEventListener('input', e => { s.upto = parseFloat(e.target.value); calc(); save(); });
+      row.querySelector('.x').addEventListener('click', () => { slabs.splice(i, 1); renderSlabs(); calc(); save(); });
+    }
+    ins[1].addEventListener('input', e => { s.fee = parseFloat(e.target.value) || 0; calc(); save(); });
+    box.appendChild(row);
+  });
+}
+function addSlab(){
+  const idx = slabs.findIndex(s => s.upto === null);
+  slabs.splice(idx, 0, {upto: NaN, fee: 0});
+  renderSlabs();
+}
+
+/* ---------- UI ---------- */
+function setMode(m){
+  mode = m;
+  $('t1').classList.toggle('on', m === 1);
+  $('t2').classList.toggle('on', m === 2);
+  $('m1').classList.toggle('hide', m !== 1);
+  $('m2').classList.toggle('hide', m !== 2);
+  $('priceBox').classList.toggle('hide', m !== 2);
+  calc();
+}
+function setTarget(v){ $('target').value = v; calc(); }
+
+function calc(){
+  const p = readParams();
+  const auto = autoPct(p);
+  $('p_total').placeholder = (auto * 100).toFixed(2) + ' (auto)';
+  $('totTag').textContent = p.totalOv !== null ? 'MANUAL' : 'AUTO';
+  $('totHelp').textContent = p.totalOv !== null
+    ? 'Tumhara apna total % use ho raha hai. Auto wapas lene ke liye box khali kar do.'
+    : 'Auto = ' + (auto * 100).toFixed(2) + '%. Chaho to apna total % khud likh do.';
+
+  let S;
+  if (mode === 1) {
+    S = n('sell');
+  } else {
+    S = solvePrice(p, n('target'));
+    $('noSol').classList.toggle('hide', S !== null);
+    if (S === null) S = 0;
+    $('needPrice').textContent = fmt(S);
+  }
+  const b = breakdown(S, p);
+  const get = S - b.ded;
+  const profit = get - p.cost - p.extra - p.pen;
+  const exact = p.handOv !== null || CONFIRMED[S] !== undefined;
+  $('r_handLbl').textContent = (S > 0 && !exact) ? 'Handling Fee (est.)' : 'Handling Fee';
+  $('handTag').textContent = p.handOv !== null ? 'MANUAL' : 'AUTO';
+  $('slabNow').textContent = S > 0 ? 'Is price par handling fee: ' + fmt(b.hand) + (exact ? '' : ' (andaza — Seller Dash se confirm karo)') : '';
+
+  $('r_comm').textContent = fmt(b.comm);
+  $('r_pay').textContent = fmt(b.pay);
+  $('r_ship').textContent = fmt(p.ship);
+  $('r_hand').textContent = fmt(b.hand);
+  $('r_vat').textContent = fmt(b.vat);
+  $('r_st').textContent = fmt(b.st);
+  $('r_wh').textContent = fmt(b.wh);
+  $('r_fsm').textContent = fmt(b.fsm);
+  $('r_vm').textContent = fmt(b.vm);
+  $('r_ded').textContent = fmt(b.ded);
+  $('r_get').textContent = fmt(get);
+  $('r_cost').textContent = fmt(p.cost);
+  $('r_extra').textContent = fmt(p.extra);
+  $('r_pen').textContent = fmt(p.pen);
+  $('r_profit').textContent = fmt(profit);
+  $('pbox').classList.toggle('neg', profit < 0);
+  const base = p.cost + p.extra + p.pen;
+  $('r_roi').textContent = base > 0 ? (profit / base * 100).toFixed(1) + '%' : '0%';
+  $('r_margin').textContent = S > 0 ? (profit / S * 100).toFixed(1) + '%' : '0%';
+  $('r_pct').textContent = S > 0 ? (b.ded / S * 100).toFixed(1) + '%' : '0%';
+}
+
+/* ---------- Save on this phone ---------- */
+const KEYS = ['pen','p_comm','p_total','p_pay','p_vat','p_st','p_wh','p_fsm','p_fsmtax','p_fsmmin','p_fsmmax','p_vm','p_vmmax','ship','handOv'];
+const CHECKS = ['fsmOn','vmOn','punjab'];
+function save(){
+  try {
+    const o = {slabs, v: 2};
+    KEYS.forEach(k => o[k] = $(k).value);
+    CHECKS.forEach(k => o[k] = $(k).checked);
+    localStorage.setItem('darazCalc3', JSON.stringify(o));
+  } catch(e){}
+}
+function load(){
+  try {
+    const o = JSON.parse(localStorage.getItem('darazCalc3') || 'null');
+    if (!o) return;
+    KEYS.forEach(k => { if (o[k] !== undefined) $(k).value = o[k]; });
+    CHECKS.forEach(k => { if (o[k] !== undefined) $(k).checked = o[k]; });
+    if (Array.isArray(o.slabs) && o.slabs.length) slabs = o.slabs.map(s => ({upto: s.upto === null ? null : (s.upto ?? NaN), fee: s.fee || 0}));
+    if (!slabs.some(s => s.upto === null)) slabs.push({upto: null, fee: 0});
+  } catch(e){}
+}
+
+document.querySelectorAll('input[type=number]').forEach(i => i.addEventListener('input', () => { calc(); save(); }));
+['fsmOn','vmOn'].forEach(id => $(id).addEventListener('change', () => { calc(); save(); }));
+$('punjab').addEventListener('change', () => { $('p_vat').value = $('punjab').checked ? 16 : 15; calc(); save(); });
+load(); renderSlabs(); calc();
+</script>
+</body>
+</html>
